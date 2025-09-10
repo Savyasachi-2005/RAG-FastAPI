@@ -1,0 +1,12 @@
+fastapi[all]
+sentence-transformers
+numpy
+scikit-learn
+pypdf
+langchain-text-splitters
+chromadb
+requests
+uvicorn
+PyPDF2
+pydantic
+python-dotenv
