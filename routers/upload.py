@@ -3,6 +3,8 @@ import os
 from utils.pdf_utils import extract_text_from_pdf
 from utils.text_utils import chunk_text
 from utils.embeddings import create_embeddings
+from utils.sanitize import sanitize_pdf
+from utils.latest_pdf import set_latest_pdf
 from dBase.database import add_chunks_to_db, get_chroma_collection
 router = APIRouter()
 
@@ -19,7 +21,8 @@ async def upload_pdf(file: UploadFile = File(...)):
     #save uploaded pdf locally
     with open(file_path,"wb") as f:
         f.write(await file.read())
-    collection=get_chroma_collection(file.filename)
+    collection_name=sanitize_pdf(file.filename)
+    collection=get_chroma_collection(collection_name)
     text = extract_text_from_pdf(file_path)
     if not text:
         raise HTTPException(status_code=400,msg="Could not extract text")
@@ -28,6 +31,7 @@ async def upload_pdf(file: UploadFile = File(...)):
     
     embeddings=create_embeddings(chunks)
     add_chunks_to_db(collection,chunks,embeddings,source_name=file.filename)
+    set_latest_pdf(file.filename)
     return {
         "filename":file.filename,
         "msg":"PDF uploaded successfully",

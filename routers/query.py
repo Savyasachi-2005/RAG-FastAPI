@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 from utils.embeddings import embedding_model
 from utils.latest_pdf import get_latest_pdf
+from utils.sanitize import sanitize_pdf
 from dBase.database import search_db,get_chroma_collection
 import requests
 import os
@@ -30,11 +31,14 @@ async def ask_question(request: QueryRequest):
         raise HTTPException(status_code=400,detail="Question can't be empty")
     query_embedding=embedding_model.encode([request.question],convert_to_numpy=True)[0]
     pdf_name=get_latest_pdf()
-    collection=get_chroma_collection(pdf_name)
+    if not pdf_name:
+        return {"ans":"No PDF has been uploaded yet."}
+    sanitized_name=sanitize_pdf(pdf_name)
+    collection=get_chroma_collection(sanitized_name)
     res=search_db(collection,query_embedding,top_k=3)
     
     if not res["documents"]:
-        return {"ans":"No relevent info found in db. please a pdf first"}
+        return {"ans":"No relevent info found in db. please upload pdf first"}
     
     retrived_chunks=res["documents"][0]
     context = "\n\n".join(retrived_chunks)
