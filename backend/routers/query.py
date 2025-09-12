@@ -32,13 +32,13 @@ async def ask_question(request: QueryRequest):
     query_embedding=embedding_model.encode([request.question],convert_to_numpy=True)[0]
     pdf_name=get_latest_pdf()
     if not pdf_name:
-        return {"ans":"No PDF has been uploaded yet."}
+        return {"answer":"No PDF has been uploaded yet.", "retrieved_chunks": []}
     sanitized_name=sanitize_pdf(pdf_name)
     collection=get_chroma_collection(sanitized_name)
     res=search_db(collection,query_embedding,top_k=3)
     
     if not res["documents"]:
-        return {"ans":"No relevent info found in db. please upload pdf first"}
+        return {"answer":"No relevant info found in DB. Please upload a PDF first.", "retrieved_chunks": []}
     
     retrived_chunks=res["documents"][0]
     context = "\n\n".join(retrived_chunks)
@@ -60,18 +60,18 @@ async def ask_question(request: QueryRequest):
         Answer:
         """
     try:
-        response=requests.post(
+        response = requests.post(
             url="https://openrouter.ai/api/v1/chat/completions",
             headers=HEADERS,
             json={
-                "model":"mistralai/mistral-7b-instruct:free",
-                "messages":[{"role":"user","content":prompt}],
-                },
-                timeout=30
+                "model": "mistralai/mistral-7b-instruct:free",
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            timeout=30,
         )
         response.raise_for_status()
-        result=response.json()
-        answer=result["choices"][0]["message"]["content"]
-        return {"answer":answer,"retrieved_chunks":retrived_chunks}
+        result = response.json()
+        answer = result["choices"][0]["message"]["content"]
+        return {"answer": answer.strip(), "retrieved_chunks": retrived_chunks}
     except requests.exceptions.RequestException as e:
-        raise HTTPException(status_code=503,detail=f"Error calling LLM: {e}")
+        raise HTTPException(status_code=503, detail=f"Error calling LLM: {e}")
