@@ -52,7 +52,7 @@ export default function Chat({ loading, setLoading }) {
         toast.error(error.message);
         setMessages((prev) => [
           ...prev,
-          { text: 'Sorry, something went wrong. Please try again.', type: 'assistant' },
+          { text: 'Sorry_000, something went wrong. Please try again.', type: 'assistant' },
         ]);
       }
     } finally {
